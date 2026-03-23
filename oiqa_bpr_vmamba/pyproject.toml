@@ -30,6 +30,8 @@ oiqa-eval-cviq = "oiqa_bpr_vmamba.cli.eval_cviq:main"
 oiqa-run-ablation = "oiqa_bpr_vmamba.cli.run_ablation:main"
 oiqa-run-split-protocols = "oiqa_bpr_vmamba.cli.run_split_protocols:main"
 oiqa-run-full-benchmark = "oiqa_bpr_vmamba.cli.run_full_benchmark:main"
+oiqa-infer-single-image = "oiqa_bpr_vmamba.cli.infer_single_image:main"
+oiqa-generate-mock-checkpoint = "oiqa_bpr_vmamba.cli.generate_mock_checkpoint:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

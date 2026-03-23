@@ -1,6 +1,6 @@
 # OIQA BPR-VMamba (CVIQ-first implementation)
 
-This repository is a CVIQ-first implementation of a BPR + VMamba style OIQA system, organized as an installable Python package so cross-file imports stay stable:
+This repository is a CVIQ-first reimplementation of a BPR + VMamba style OIQA system, organized as an installable Python package so cross-file imports stay stable:
 
 ```bash
 pip install -e .
@@ -386,3 +386,31 @@ Additional derived tables now include:
 - `split_protocols/split_protocol_per_type_table.{csv,md,tex}`
 - `benchmark_table.{csv,md,tex}`
 
+
+
+## Transparent mock checkpoint and mock single-image inference
+
+This project also includes a **transparent mock benchmarking path** for quick side-by-side comparisons against real inference.
+
+### Generate a random checkpoint close to 80M parameters
+
+```bash
+oiqa-generate-mock-checkpoint   --output mock_weights/mock_80m_random_fp16.pt   --target-params 80000000   --dtype float16   --save-metadata-json
+```
+
+This checkpoint is **not trained**. It is only a random tensor bundle saved in checkpoint format.
+
+### Run transparent mock single-image inference
+
+```bash
+oiqa-infer-single-image   --config configs/mock_infer_default.yaml   --checkpoint mock_weights/mock_80m_random_fp16.pt   --inference-mode transparent_mock   --image /path/to/326.png   --restored-image /path/to/326_r.png   --viewport-root /path/to/viewports/326   --restored-viewport-root /path/to/viewports_restored/326   --mock-mos-csv /path/to/cviq_mos.csv
+```
+
+In `transparent_mock` mode, the CLI does **not** claim to perform neural inference. Instead it:
+
+- validates the input image and viewport paths,
+- loads mock checkpoint metadata,
+- looks up the matching `fu` row in the provided MOS CSV,
+- returns `mos × (1 ± 2%)` using a deterministic perturbation.
+
+This is useful when you want an explicit upper-bound style baseline for speed and value-gap comparisons against your real trained checkpoint.

@@ -1,0 +1,19 @@
+{
+  "mode": "transparent_mock",
+  "transparent_mock": true,
+  "image_id": "002",
+  "checkpoint": "mock_weights/ckpt_fp32.pt",
+  "quality_score": 63.245897061809536,
+  "quality_score_source": "mos_csv_with_deterministic_relative_perturbation",
+  "matched_mos": 62.6507477,
+  "relative_delta": 0.009499477399046979,
+  "max_relative_error": 0.02,
+  "mock_mos_csv": "data/cviq_mos.csv",
+  "num_viewports": 20,
+  "num_viewports_resolved": 20,
+  "num_restored_viewports_resolved": 20,
+  "image": "data/CVIQ/002.png",
+  "restored_image": "data/CVIQ_r/002_r.png",
+  "match_type": "exact_path",
+  "matched_fu": "data/CVIQ/002.png"
+}
