@@ -1,2 +1,2 @@
-mode,transparent_mock,image_id,checkpoint,quality_score,quality_score_source,matched_mos,relative_delta,max_relative_error,mock_mos_csv,num_viewports,num_viewports_resolved,num_restored_viewports_resolved,image,restored_image,match_type,matched_fu
-transparent_mock,True,002,mock_weights/ckpt_fp32.pt,63.245897061809536,mos_csv_with_deterministic_relative_perturbation,62.6507477,0.009499477399046979,0.02,data/cviq_mos.csv,20,20,20,data/CVIQ/002.png,data/CVIQ_r/002_r.png,exact_path,data/CVIQ/002.png
+mode,transparent_optimal,checkpoint,quality_score,num_viewports,num_viewports_resolved
+transparent_optimal,True,../ckpts/cviq_weights/ckpt_fp32.pt,52.853213875349574,20,20

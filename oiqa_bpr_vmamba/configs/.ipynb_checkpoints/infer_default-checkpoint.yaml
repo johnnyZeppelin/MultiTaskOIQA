@@ -26,8 +26,3 @@ degradation:
   camera_noise_std_range: [0.0, 0.02]
   random_order: true
   seed: 3407
-
-mock:
-  global_column: fu
-  mos_column: mos
-  max_relative_error: 0.02

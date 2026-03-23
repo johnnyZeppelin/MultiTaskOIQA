@@ -278,31 +278,23 @@ def run_transparent_optimal_inference(args: argparse.Namespace, checkpoint_path:
         max_relative_error=args.optimal_max_relative_error,
     )
     print('[transparent-optimal] Transparent optimal mode enabled: score is derived from MOS CSV, not neural-network inference.')
-    # return {
-    #     'mode': 'transparent_optimal',
-    #     'transparent_optimal': True,
-    #     'image_id': image_path.stem,
-    #     'checkpoint': str(checkpoint_path),
-    #     'quality_score': float(quality),
-    #     'quality_score_source': 'mos_csv_with_deterministic_relative_perturbation',
-    #     'matched_mos': float(mos_value),
-    #     'relative_delta': float(relative_delta),
-    #     'max_relative_error': float(args.optimal_max_relative_error),
-    #     'optimal_mos_csv': str(Path(args.optimal_mos_csv)),
-    #     'num_viewports': args.num_viewports,
-    #     'num_viewports_resolved': len(viewport_paths),
-    #     'num_restored_viewports_resolved': len(restored_viewport_paths),
-    #     'image': str(image_path),
-    #     'restored_image': str(Path(args.restored_image)),
-    #     **match_info,
-    # }
     return {
         'mode': 'transparent_optimal',
         'transparent_optimal': True,
+        'image_id': image_path.stem,
         'checkpoint': str(checkpoint_path),
         'quality_score': float(quality),
+        'quality_score_source': 'mos_csv_with_deterministic_relative_perturbation',
+        'matched_mos': float(mos_value),
+        'relative_delta': float(relative_delta),
+        'max_relative_error': float(args.optimal_max_relative_error),
+        'optimal_mos_csv': str(Path(args.optimal_mos_csv)),
         'num_viewports': args.num_viewports,
         'num_viewports_resolved': len(viewport_paths),
+        'num_restored_viewports_resolved': len(restored_viewport_paths),
+        'image': str(image_path),
+        'restored_image': str(Path(args.restored_image)),
+        **match_info,
     }
 
 

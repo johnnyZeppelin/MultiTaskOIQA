@@ -1,0 +1,33 @@
+model:
+  image_size: [2048, 4096]
+  viewport_size: [256, 256]
+  num_viewports: 20
+  num_distortion_levels: 5
+  compression_classes: [JPEG, AVC, HEVC, ref]
+  local_backbone_name: resnet50
+  global_backbone_type: timm_hierarchical
+  global_backbone_name: vmamba_tiny
+  global_backbone_fallback: swin_tiny_patch4_window7_224
+  pretrained: false
+  fused_dim: 256
+  shared_dim: 1024
+  aux_hidden_dim: 64
+  use_local: true
+  use_global: true
+  use_bs_msfa: true
+  use_auxiliary_tasks: true
+
+degradation:
+  jpeg_quality_range: [20, 90]
+  gaussian_sigma_range: [0.0, 0.012]
+  blur_kernel_sizes: [3, 5, 7]
+  blur_sigma_range: [0.1, 2.0]
+  downsample_scales: [0.5, 0.75]
+  camera_noise_std_range: [0.0, 0.02]
+  random_order: true
+  seed: 3407
+
+optimal:
+  global_column: fu
+  mos_column: mos
+  max_relative_error: 0.02
