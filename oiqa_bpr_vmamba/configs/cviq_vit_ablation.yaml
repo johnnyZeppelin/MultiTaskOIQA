@@ -1,0 +1,8 @@
+experiment_name: cviq_vit_ablation
+seed: 3407
+output_dir: runs/cviq_vit_ablation
+
+_base_: cviq_default.yaml
+model:
+  global_backbone_type: vit
+  global_backbone_name: vit_base_patch16_224

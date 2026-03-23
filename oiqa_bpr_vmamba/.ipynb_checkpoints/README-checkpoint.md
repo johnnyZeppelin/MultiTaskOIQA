@@ -1,0 +1,388 @@
+# OIQA BPR-VMamba (CVIQ-first implementation)
+
+This repository is a CVIQ-first implementation of a BPR + VMamba style OIQA system, organized as an installable Python package so cross-file imports stay stable:
+
+```bash
+pip install -e .
+```
+
+## What is included
+
+- CVIQ manifest builder from your MOS CSV.
+- Offline degradation synthesis script for all viewports.
+- BPR local branches based on restored and degraded pseudo references.
+- Multi-scale local/global fusion with a BS-MSFA implementation.
+- Multi-task heads for MOS regression, distortion-level classification, and compression-type classification.
+- Training, evaluation, ablation, split-ratio experiment entrypoints.
+- A one-command full benchmark runner.
+- Per-compression-type evaluation for JPEG / AVC / HEVC / ref and overall metrics.
+
+## CSV convention
+
+The default CSV column names exactly match your setting:
+
+```text
+fu, f01, f02, ..., f20, mos
+```
+
+- `fu`: distorted ERP image path.
+- `f01` to `f20`: the 20 viewport paths.
+- `mos`: MOS score.
+
+Optional columns:
+
+- `compression_type`: only needed when the compression label cannot be inferred from the path.
+- `distortion_level`: if absent, the code will derive it automatically by MOS quantile binning.
+
+The same convention can be reused later for OIQA and OSIQA.
+
+## Path design
+
+The code supports the path style you described: the CSV can store **relative paths beginning from `data/...`**, while you manually provide a filesystem prefix placed **before** `data`.
+
+For example, if the CSV stores:
+
+```text
+data/CVIQ/326.png
+data/CVIQ/view_ports/326/326_fov15.png
+```
+
+and you pass:
+
+```text
+--path-prefix F:/ws/dataset
+```
+
+then the resolved absolute paths become:
+
+```text
+F:/ws/dataset/data/CVIQ/326.png
+F:/ws/dataset/data/CVIQ/view_ports/326/326_fov15.png
+```
+
+If your CSV already contains absolute paths, `--path-prefix` is not needed.
+
+`--dataset-root` is still accepted as a backward-compatible alias of `--path-prefix`.
+
+## Supported viewport layouts
+
+The manifest builder supports both of these as long as the CSV points to the real files:
+
+```text
+data/CVIQ/view_ports/JPEG/326_fov15.png
+```
+
+and
+
+```text
+data/CVIQ/view_ports/326/326_fov15.png
+```
+
+For restored and degraded viewport paths, the code mirrors the relative subtree that comes **after** `view_ports/`.
+
+Examples:
+
+```text
+source:   data/CVIQ/view_ports/JPEG/326_fov15.png
+restored: data/CVIQ/restored/view_ports_restored/JPEG/326_fov15_r.png
+degraded: data/CVIQ/degraded/view_ports_degraded/JPEG/326_fov15_d.png
+```
+
+```text
+source:   data/CVIQ/view_ports/326/326_fov15.png
+restored: data/CVIQ/restored/view_ports_restored/326/326_fov15_r.png
+degraded: data/CVIQ/degraded/view_ports_degraded/326/326_fov15_d.png
+```
+
+For ERP images, the default restored root is:
+
+```text
+data/CVIQ/restored/CVIQ_restored/
+```
+
+so:
+
+```text
+data/CVIQ/326.png -> data/CVIQ/restored/CVIQ_restored/326_r.png
+```
+
+## Default CVIQ layout assumed by the builder
+
+```text
+data/
+└── CVIQ/
+    ├── 001.png
+    ├── 002.png
+    ├── view_ports/
+    │   └── ...
+    ├── restored/
+    │   ├── CVIQ_restored/
+    │   └── view_ports_restored/
+    ├── degraded/
+    │   └── view_ports_degraded/
+    └── metadata/
+        ├── cviq_mos.csv
+        └── manifest_cviq.csv
+```
+
+## Manifest building
+
+Typical command when the CSV stores relative `data/...` paths:
+
+```bash
+oiqa-build-cviq-manifest \
+  --csv F:/ws/dataset/data/CVIQ/metadata/cviq_mos.csv \
+  --path-prefix F:/ws/dataset \
+  --output F:/ws/dataset/data/CVIQ/metadata/manifest_cviq.csv
+```
+
+You can also explicitly override where restored or degraded paths should be written in the manifest:
+
+```bash
+oiqa-build-cviq-manifest \
+  --csv F:/ws/dataset/data/CVIQ/metadata/cviq_mos.csv \
+  --path-prefix F:/ws/dataset \
+  --global-restored-root data/CVIQ/restored/CVIQ_restored \
+  --viewport-restored-root data/CVIQ/restored/view_ports_restored \
+  --degraded-root data/CVIQ/degraded/view_ports_degraded \
+  --output F:/ws/dataset/data/CVIQ/metadata/manifest_cviq.csv
+```
+
+If compression labels cannot be inferred from the paths, add a CSV column such as `compression_type` and pass:
+
+```bash
+--compression-column compression_type
+```
+
+## Typical workflow
+
+### 1) Build the manifest
+
+```bash
+oiqa-build-cviq-manifest \
+  --csv F:/ws/dataset/data/CVIQ/metadata/cviq_mos.csv \
+  --path-prefix F:/ws/dataset \
+  --output F:/ws/dataset/data/CVIQ/metadata/manifest_cviq.csv
+```
+
+### 2) Synthesize degraded viewports
+
+```bash
+oiqa-synthesize-degraded \
+  --manifest F:/ws/dataset/data/CVIQ/metadata/manifest_cviq.csv \
+  --output-root F:/ws/dataset/data/CVIQ/degraded/view_ports_degraded
+```
+
+### 3) Train on CVIQ
+
+```bash
+oiqa-train-cviq --config configs/cviq_default.yaml
+```
+
+Useful training flags:
+
+```bash
+oiqa-train-cviq \
+  --config configs/cviq_default.yaml \
+  --override-output-dir runs/debug_exp \
+  --epochs 50 \
+  --batch-size 2 \
+  --num-workers 2 \
+  --device cuda:0
+```
+
+Resume from the last checkpoint in the output directory:
+
+```bash
+oiqa-train-cviq \
+  --config configs/cviq_default.yaml \
+  --override-output-dir runs/debug_exp \
+  --resume auto
+```
+
+
+Additional training flags:
+
+```bash
+oiqa-train-cviq   --config configs/cviq_default.yaml   --accumulation-steps 4   --best-metric SRCC   --early-stopping-patience 20   --max-train-batches 10   --max-eval-batches 5
+```
+
+This is useful for low-VRAM debugging, selecting the checkpoint by `PLCC / SRCC / RMSE`, and shortening smoke runs before large experiments.
+
+The training script now saves:
+
+- `resolved_config.yaml`
+- `history.csv`
+- `last.pt`, `best.pt`, periodic `epoch_XXX.pt`
+- `best_metrics.json`, `last_metrics.json`
+- per-epoch `epoch_XXX_summary.json`
+- `val_best_aux_metrics.json`, `test_aux_metrics.json`
+- `best_val_predictions.csv`
+- `val_best_overall.json`, `val_best_per_type.csv`, `val_best_predictions.csv`
+- `test_overall.json`, `test_per_type.csv`, `test_predictions.csv`
+- `run_summary.json`
+
+### 4) Evaluate a checkpoint
+
+
+Evaluate one checkpoint and also export a combined summary for every compression type:
+
+```bash
+oiqa-eval-cviq \
+  --config configs/cviq_default.yaml \
+  --checkpoint best \
+  --split test \
+  --evaluate-all-types
+```
+
+This now writes, for each evaluation prefix, a compact summary bundle in three formats:
+
+- `*_summary.csv`
+- `*_summary.md`
+- `*_summary.tex`
+
+When `--evaluate-all-types` is enabled, it also writes a multi-run bundle:
+
+- `*_multi_eval_summary.csv`
+- `*_multi_eval_summary.md`
+- `*_multi_eval_summary.tex`
+
+Evaluate the whole split:
+
+```bash
+oiqa-eval-cviq \
+  --config configs/cviq_default.yaml \
+  --checkpoint runs/cviq_default/best.pt \
+  --split test
+```
+
+Evaluate only one compression type:
+
+```bash
+oiqa-eval-cviq \
+  --config configs/cviq_default.yaml \
+  --checkpoint runs/cviq_default/best.pt \
+  --split test \
+  --compression-type JPEG
+```
+
+You can also pass an explicit split CSV:
+
+```bash
+oiqa-eval-cviq \
+  --config configs/cviq_default.yaml \
+  --checkpoint runs/cviq_default/best.pt \
+  --split-csv F:/ws/dataset/data/CVIQ/metadata/splits/test_3407.csv
+```
+
+### 5) Run ablations
+
+```bash
+oiqa-run-ablation --config configs/cviq_default.yaml
+```
+
+Run only selected ablations:
+
+```bash
+oiqa-run-ablation \
+  --config configs/cviq_default.yaml \
+  --ablations no_local,no_global,vit_backbone \
+  --epochs 100
+```
+
+This writes one subdirectory per ablation and an aggregated `ablation_summary.csv`.
+
+Useful options:
+
+```bash
+oiqa-run-ablation   --config configs/cviq_default.yaml   --include-baseline   --skip-existing
+```
+
+Each child run now also writes its own `train.log`, and the aggregated ablation summary includes baseline-relative deltas when a baseline run is present.
+
+### 6) Run split-proportion experiments
+
+```bash
+oiqa-run-split-protocols --config configs/cviq_default.yaml
+```
+
+With explicit repeat count and subset of protocols:
+
+```bash
+oiqa-run-split-protocols \
+  --config configs/cviq_default.yaml \
+  --protocols 50_50,80_20 \
+  --repeats 5 \
+  --epochs 100
+```
+
+This writes per-repeat metrics for each protocol plus:
+
+- `all_protocols_per_repeat.csv`
+- `all_protocols_average.csv`
+- per-protocol `average.json`
+- per-protocol `per_type_average.csv`
+
+You can also reuse already-finished repeats with:
+
+```bash
+oiqa-run-split-protocols   --config configs/cviq_default.yaml   --protocols 50_50,80_20   --repeats 5   --skip-existing
+```
+
+### 7) Run the whole benchmark bundle
+
+```bash
+oiqa-run-full-benchmark \
+  --config configs/cviq_default.yaml \
+  --work-dir runs/full_benchmark \
+  --split-repeats 5
+```
+
+This orchestrates:
+
+- the main run,
+- all ablations,
+- all split-protocol experiments,
+- and saves `benchmark_summary.json`.
+
+## Config note
+
+The training code itself only depends on the manifest and split CSVs. Once the manifest is generated correctly, you can move the dataset anywhere by updating:
+
+- your `--path-prefix` when rebuilding the manifest, or
+- the absolute paths already stored inside the manifest.
+
+## Notes on the global backbone
+
+The paper uses VMamba for global feature extraction. This code keeps that interface, but the actual backbone is wrapped so you can:
+
+- use an installable VMamba/timm backbone when available;
+- switch to a ViT-like backbone for backbone ablations;
+- keep the rest of the code unchanged.
+
+This also keeps the project easy to extend to OIQA later by only resizing ERP inputs to 4096x2048 before the global branch.
+
+## Engineering notes
+
+- The package can be imported either after `pip install -e .` or directly in tests because `tests/conftest.py` injects `src/` onto `PYTHONPATH`.
+- When `timm`, `torchvision`, or an exact VMamba backbone is unavailable, the project falls back automatically to an internal multi-scale CNN backbone so the rest of the training, ablation, and evaluation pipeline still runs end-to-end.
+- Compression-type filtering happens at dataset level, so `oiqa-eval-cviq --compression-type JPEG` uses the same manifest and split files without needing to rebuild them.
+
+
+### 7) One-command benchmark bundle
+
+```bash
+oiqa-run-full-benchmark   --config configs/cviq_default.yaml   --epochs 50   --split-repeats 5
+```
+
+This will create `main/`, `ablations/`, `split_protocols/`, plus top-level benchmark tables in CSV / Markdown / LaTeX under the chosen work directory.
+
+Additional derived tables now include:
+
+- `main/main_result_table.{csv,md,tex}`
+- `main/main_per_type_table.{csv,md,tex}`
+- `ablations/ablation_table.{csv,md,tex}`
+- `split_protocols/split_protocol_table.{csv,md,tex}`
+- `split_protocols/split_protocol_per_type_table.{csv,md,tex}`
+- `benchmark_table.{csv,md,tex}`
+
