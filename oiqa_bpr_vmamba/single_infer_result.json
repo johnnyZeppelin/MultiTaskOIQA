@@ -1,8 +1,8 @@
 {
-  "mode": "transparent_optimal",
-  "transparent_optimal": true,
+  "mode": "inference",
+  "inference": true,
   "checkpoint": "../ckpts/cviq_weights/ckpt_fp32.pt",
-  "quality_score": 35.542209436042214,
+  "quality_score": 58.342524061377986,
   "num_viewports": 20,
   "num_viewports_resolved": 20
 }

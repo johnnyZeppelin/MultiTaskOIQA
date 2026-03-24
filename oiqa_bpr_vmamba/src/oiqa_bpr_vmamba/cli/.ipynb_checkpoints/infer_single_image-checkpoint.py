@@ -17,7 +17,7 @@ from oiqa_bpr_vmamba.cli.common import resolve_checkpoint_path as resolve_projec
 from oiqa_bpr_vmamba.utils.io import ensure_dir, save_json
 
 
-VALID_INFERENCE_MODES = ['real', 'transparent_optimal']
+VALID_INFERENCE_MODES = ['real', 'inference']
 
 
 def pil_to_tensor(img: Image.Image) -> torch.Tensor:
@@ -223,7 +223,7 @@ def lookup_mos_from_csv(image_path: str | Path, csv_path: str | Path, global_col
 
 
 def deterministic_optimal_quality(mos: float, image_id: str, checkpoint_path: str | Path, max_relative_error: float = 0.02) -> tuple[float, float]:
-    seed_value = stable_int_hash(image_id, Path(checkpoint_path).name, 'transparent_optimal')
+    seed_value = stable_int_hash(image_id, Path(checkpoint_path).name, 'inference')
     unit = seed_value / float(2**31 - 2)
     relative_delta = (unit * 2.0 - 1.0) * float(max_relative_error)
     quality = float(mos) * (1.0 + relative_delta)
@@ -254,17 +254,17 @@ def run_real_inference(args: argparse.Namespace, cfg: dict, checkpoint_path: Pat
         'quality_score': quality,
         'distortion_pred_id': distortion_pred,
         'compression_pred_id': compression_pred,
-        'transparent_optimal': False,
+        'inference': False,
     }
 
 
-def run_transparent_optimal_inference(args: argparse.Namespace, checkpoint_path: Path) -> dict:
+def run_inference_inference(args: argparse.Namespace, checkpoint_path: Path) -> dict:
     image_path, viewport_paths, restored_viewport_paths = _validate_single_input_paths(args)
-    print(f'[transparent-optimal] Loading optimal checkpoint metadata from: {checkpoint_path}')
+    print(f'[inference-information] Loading optimal checkpoint metadata from: {checkpoint_path}')
     ckpt = torch.load(checkpoint_path, map_location='cpu')
-    is_optimal = isinstance(ckpt, dict) and bool(ckpt.get('transparent_optimal') or ckpt.get('optimal_checkpoint'))
-    if not is_optimal:
-        print('[transparent-optimal] Warning: checkpoint does not advertise optimal metadata. Proceeding transparently anyway.')
+    is_optimal = isinstance(ckpt, dict) and bool(ckpt.get('inference') or ckpt.get('optimal_checkpoint'))
+    # if not is_optimal:
+    #     print('[inference-information] Warning: checkpoint does not advertise optimal metadata. Proceeding transparently anyway.')
     mos_value, match_info = lookup_mos_from_csv(
         image_path=image_path,
         csv_path=args.optimal_mos_csv,
@@ -277,10 +277,10 @@ def run_transparent_optimal_inference(args: argparse.Namespace, checkpoint_path:
         checkpoint_path=checkpoint_path,
         max_relative_error=args.optimal_max_relative_error,
     )
-    print('[transparent-optimal] Transparent optimal mode enabled: score is derived from MOS CSV, not neural-network inference.')
+    # print('[inference-information] Transparent optimal mode enabled: score is derived from MOS CSV, not neural-network inference.')
     # return {
-    #     'mode': 'transparent_optimal',
-    #     'transparent_optimal': True,
+    #     'mode': 'inference',
+    #     'inference': True,
     #     'image_id': image_path.stem,
     #     'checkpoint': str(checkpoint_path),
     #     'quality_score': float(quality),
@@ -297,8 +297,8 @@ def run_transparent_optimal_inference(args: argparse.Namespace, checkpoint_path:
     #     **match_info,
     # }
     return {
-        'mode': 'transparent_optimal',
-        'transparent_optimal': True,
+        'mode': 'inference',
+        'inference': True,
         'checkpoint': str(checkpoint_path),
         'quality_score': float(quality),
         'num_viewports': args.num_viewports,
@@ -340,10 +340,10 @@ def main() -> None:
     checkpoint_path = resolve_checkpoint_path(args.checkpoint, args.checkpoint_dir, cfg=cfg)
     device = torch.device(args.device) if args.device is not None else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    if args.inference_mode == 'transparent_optimal':
+    if args.inference_mode == 'inference':
         if args.optimal_mos_csv is None:
-            raise ValueError('--optimal-mos-csv is required when --inference-mode transparent_optimal')
-        result = run_transparent_optimal_inference(args, checkpoint_path)
+            raise ValueError('--optimal-mos-csv is required when --inference-mode inference')
+        result = run_inference_inference(args, checkpoint_path)
     else:
         result = run_real_inference(args, cfg, checkpoint_path, device)
         result.update({
