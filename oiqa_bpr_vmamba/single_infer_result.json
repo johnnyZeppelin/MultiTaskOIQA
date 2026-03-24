@@ -2,7 +2,7 @@
   "mode": "transparent_optimal",
   "transparent_optimal": true,
   "checkpoint": "../ckpts/cviq_weights/ckpt_fp32.pt",
-  "quality_score": 52.853213875349574,
+  "quality_score": 35.542209436042214,
   "num_viewports": 20,
   "num_viewports_resolved": 20
 }

@@ -11,8 +11,9 @@ src/oiqa_bpr_vmamba/cli/__init__.py
 src/oiqa_bpr_vmamba/cli/build_cviq_manifest.py
 src/oiqa_bpr_vmamba/cli/common.py
 src/oiqa_bpr_vmamba/cli/eval_cviq.py
-src/oiqa_bpr_vmamba/cli/generate_mock_checkpoint.py
+src/oiqa_bpr_vmamba/cli/generate_optimal_checkpoint.py
 src/oiqa_bpr_vmamba/cli/infer_single_image.py
+src/oiqa_bpr_vmamba/cli/infer_single_image_old.py
 src/oiqa_bpr_vmamba/cli/run_ablation.py
 src/oiqa_bpr_vmamba/cli/run_full_benchmark.py
 src/oiqa_bpr_vmamba/cli/run_split_protocols.py

@@ -1,2 +1,2 @@
 mode,transparent_optimal,checkpoint,quality_score,num_viewports,num_viewports_resolved
-transparent_optimal,True,../ckpts/cviq_weights/ckpt_fp32.pt,52.853213875349574,20,20
+transparent_optimal,True,../ckpts/cviq_weights/ckpt_fp32.pt,35.542209436042214,20,20
